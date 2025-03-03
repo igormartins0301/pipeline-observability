@@ -16,9 +16,34 @@ jobs:
       DB_PORT: ${{ secrets.DB_PORT }}
 
     steps:
+      # Etapa 1: Checkout do código
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Run database migration
+      # Etapa 2: Configurar o ambiente Python
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.12.4'
+
+      # Etapa 3: Instalar dependências do projeto (se necessário, por exemplo, requirements.txt)
+      - name: Install dependencies
         run: |
-          echo "DB Name: $DB_NAME"
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Etapa 4: Rodar os testes com pytest
+      - name: Run pytest
+        run: |
+          pytest --maxfail=1 --disable-warnings -q
+
+      # Etapa 5: Exibir os resultados do pytest
+      - name: Show pytest results
+        if: success() # Se o pytest passou, mostre o resultado
+        run: |
+          echo "Tests passed successfully!"
+
+      - name: Handle test failures
+        if: failure() # Se o pytest falhou, mostre um erro
+        run: |
+          echo "Tests failed. Please check the logs above for errors."
