@@ -1,0 +1,9 @@
+{
+    "python.analysis.cacheFolder": "",
+    "python.testing.cwd": "${workspaceFolder}",
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+        ".pytest_cache": true
+    }
+}
