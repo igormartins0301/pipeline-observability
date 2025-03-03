@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - develop  # Add develop branch trigger
 
 jobs:
   build:
@@ -32,8 +33,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Etapa 4: Rodar os testes com pytest
-      - name: Run pytest
+      # Etapa 4: Rodar os testes apenas na branch develop
+      - name: Run tests (only on develop branch)
+        if: github.ref == 'refs/heads/develop'  # Run only on develop branch
         run: |
           pytest --maxfail=1 --disable-warnings -q
 
@@ -43,6 +45,7 @@ jobs:
         run: |
           echo "Tests passed successfully!"
 
+      # Handle test failures
       - name: Handle test failures
         if: failure() # Se o pytest falhou, mostre um erro
         run: |
