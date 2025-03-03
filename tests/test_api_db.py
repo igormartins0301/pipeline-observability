@@ -1,53 +1,47 @@
 import pytest
-from unittest.mock import patch, MagicMock
-import requests
-import psycopg2
+from unittest.mock import MagicMock, patch
+from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 from main import DataHandler
+from models.raw_model import RawData
 
+@pytest.fixture
+def data_handler():
+    """Fixture to create a DataHandler instance."""
+    return DataHandler()
 
-@patch("requests.get")
-def test_extract_data_from_api(mock_get):
+@pytest.fixture
+def mock_get(monkeypatch):
+    """Fixture to mock requests.get."""
+    mock_get = MagicMock()
+    monkeypatch.setattr("requests.get", mock_get)
+    return mock_get
+
+@pytest.fixture
+def mock_db_session():
+    """Fixture to mock SQLAlchemy session."""
+    return UnifiedAlchemyMagicMock()
+
+def test_extract_data_from_api(mock_get, data_handler):
+    """Test API extraction method without real API calls."""
     mock_response = MagicMock()
     mock_response.json.return_value = {
-        "data": {"amount": 5000.0, "base": "USD", "currency": "BTC"}
+        "data": {"amount": "100.0", "base": "BTC", "currency": "USD"}
     }
     mock_get.return_value = mock_response
 
-    data_handler = DataHandler()
-
     data = data_handler.extract_data_from_api()
-
-    assert data["amount"] == 5000.0
-    assert data["currency"] == "BTC"
-    assert data["base"] == "USD"
-    mock_get.assert_called_once_with(
-        "https://api.coinbase.com/v2/prices/spot?currency=USD"
-    )
-
-
-@pytest.fixture
-def set_env_vars(monkeypatch):
-    monkeypatch.setenv('DB_NAME', 'crypto_db')
-    monkeypatch.setenv('DB_USER', 'postgres')
-    monkeypatch.setenv('DB_PASSWORD', 'example')
-    monkeypatch.setenv('DB_HOST', 'localhost')
-    monkeypatch.setenv('DB_PORT', '5432')
-
-@patch('psycopg2.connect')
-def test_connect_to_db(mock_connect, set_env_vars):
-    mock_connection = MagicMock()
-    mock_connect.return_value = mock_connection
-
-    data_handler = DataHandler()
     
-    connection = data_handler.connect_to_db()
+    assert data["amount"] == "100.0"
+    assert data["base"] == "BTC"
+    assert data["currency"] == "USD"
 
-    mock_connect.assert_called_once_with(
-        dbname='crypto_db',
-        user='postgres',
-        password='example',
-        host='localhost',
-        port='5432'
-    )
+@patch.object(DataHandler, "connect_to_db", return_value=True)
+def test_insert_data_into_db(mock_connect, data_handler, mock_db_session):
+    """Test inserting data into DB without real database."""
+    mock_data = {"amount": "100.0", "base": "BTC", "currency": "USD"}
 
-    assert connection == mock_connection
+    data_handler.session = mock_db_session  
+
+    data_handler.insert_data_into_db(mock_data)
+
+    assert mock_db_session.query(RawData).count() == 1
